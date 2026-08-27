@@ -40,7 +40,17 @@ docker run --rm -v "$(pwd)/examples:/data:ro" recipe-normalizer /data
 
 Parsers (by file suffix), a shared `Recipe` model, and a pluggable metric transformer sit behind one pipeline: discover → parse → transform → write JSON. Adding a format or a transform is a registry entry, not a change to the CLI.
 
-We matched the provided sample output (rice + pudding), documented conversion assumptions in code, skip unreadable files instead of failing the whole run, and ship unit tests plus a Dockerfile.
+We reproduce the provided sample output (rice + pudding), skip unreadable files instead of failing the whole run, and ship unit tests plus a Dockerfile.
+
+## Assumptions
+
+- **Output content matches the provided sample; array order does not.** Recipes are emitted in filename order, which is deterministic and independent of filesystem readdir order. The sample's rice-before-pudding order isn't derivable from any property of the inputs, so we didn't contort discovery to reproduce it.
+- **Ingredient fields.** `item` and `quantity` are required; `unit` and `comment` appear only when present. An empty XML `<unit></unit>` is treated as missing rather than as `""`. Whole numbers serialize as integers (`200`, not `200.0`).
+- **`preparations` is always a list of strings**, so a single XML/YAML string becomes a one-element list.
+- **Conversion factors follow the sample, not exact SI.** Gallon uses 3.78 l (not 3.78541) and a cup converts to 240 gr, both implied by the expected output. Cups therefore assume water density — 2 cups of sugar yields 480 gr here, where a density-aware answer is nearer 400 g. Ingredient-specific densities are out of scope.
+- **Bare `oz` means weight**; fluid ounces must be spelled `fl oz` / `fl. oz.`.
+- **Unrecognized units pass through unchanged** and are logged once per recipe at WARNING level.
+- **A file that fails to parse is logged and skipped.** The process exits non-zero only when no recipe could be loaded at all. Directory scanning is non-recursive unless `-r` is given, and hidden files are ignored.
 
 ## Original requirements
 

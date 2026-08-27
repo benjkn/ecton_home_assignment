@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 
 from recipe_normalizer.models import Ingredient, Recipe
@@ -36,6 +38,23 @@ def test_unknown_unit_is_left_unchanged() -> None:
     converted = convert_ingredient(Ingredient(item="spice", quantity=1, unit="pinch"))
     assert converted.unit == "pinch"
     assert converted.quantity == 1
+
+
+def test_unknown_unit_is_reported_once_per_recipe(caplog: pytest.LogCaptureFixture) -> None:
+    recipe = Recipe(
+        name="spice mix",
+        ingredients=[
+            Ingredient(item="salt", quantity=1, unit="pinch"),
+            Ingredient(item="pepper", quantity=2, unit="pinch"),
+            Ingredient(item="rice", quantity=1, unit="pound"),
+        ],
+    )
+    with caplog.at_level(logging.WARNING):
+        MetricTransformer().apply(recipe)
+    warnings = [record.getMessage() for record in caplog.records]
+    assert len(warnings) == 1
+    assert "'pinch'" in warnings[0]
+    assert "pound" not in warnings[0]
 
 
 def test_metric_transformer_preserves_name_and_preparations() -> None:

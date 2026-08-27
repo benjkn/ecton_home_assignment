@@ -3,6 +3,7 @@ import logging
 from pathlib import Path
 
 from recipe_normalizer.cli import main
+from tests.helpers import by_name
 from tests.paths import EXPECTED_OUTPUT, FIXTURES
 
 
@@ -12,8 +13,8 @@ def test_cli_examples_skips_broken_file(tmp_path: Path, caplog) -> None:
     with caplog.at_level(logging.ERROR):
         assert main([str(examples), "-o", str(output)]) == 0
     assert any("Skipping broken.yaml" in record.getMessage() for record in caplog.records)
-    assert json.loads(output.read_text(encoding="utf-8")) == json.loads(
-        EXPECTED_OUTPUT.read_text(encoding="utf-8")
+    assert by_name(json.loads(output.read_text(encoding="utf-8"))) == by_name(
+        json.loads(EXPECTED_OUTPUT.read_text(encoding="utf-8"))
     )
 
 
@@ -25,7 +26,9 @@ def test_cli_writes_expected_output(tmp_path: Path) -> None:
     output = tmp_path / "out" / "recipes.json"
 
     assert main([str(input_dir), "-o", str(output)]) == 0
-    assert json.loads(output.read_text(encoding="utf-8")) == json.loads(EXPECTED_OUTPUT.read_text(encoding="utf-8"))
+    assert by_name(json.loads(output.read_text(encoding="utf-8"))) == by_name(
+        json.loads(EXPECTED_OUTPUT.read_text(encoding="utf-8"))
+    )
 
 
 def test_cli_stdout(tmp_path: Path, capsys) -> None:

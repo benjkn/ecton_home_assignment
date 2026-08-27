@@ -8,6 +8,7 @@ from recipe_normalizer.discovery import discover_recipe_files
 from recipe_normalizer.exceptions import RecipeNormalizerError
 from recipe_normalizer.pipeline import run
 from recipe_normalizer.writers import recipes_to_json
+from tests.helpers import by_name
 from tests.paths import EXPECTED_OUTPUT, FIXTURES
 
 EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
@@ -30,10 +31,9 @@ def test_discover_non_recursive_skips_unknown_and_hidden(tmp_path: Path) -> None
 
 def test_examples_directory_matches_expected_output() -> None:
     recipes = run(EXAMPLES, transform="metric")
-    expected_text = EXPECTED_OUTPUT.read_text(encoding="utf-8")
-    expected = json.loads(expected_text)
-    assert [recipe.to_dict() for recipe in recipes] == expected
-    assert recipes_to_json(recipes) == expected_text
+    expected = json.loads(EXPECTED_OUTPUT.read_text(encoding="utf-8"))
+    assert by_name([recipe.to_dict() for recipe in recipes]) == by_name(expected)
+    assert by_name(json.loads(recipes_to_json(recipes))) == by_name(expected)
 
 
 def test_examples_skips_broken_yaml_and_keeps_valid_recipes(caplog: pytest.LogCaptureFixture) -> None:
@@ -43,7 +43,7 @@ def test_examples_skips_broken_yaml_and_keeps_valid_recipes(caplog: pytest.LogCa
         recipes = run(EXAMPLES, transform="metric")
     assert any("broken.yaml" in record.getMessage() for record in caplog.records)
     assert any("Skipping" in record.getMessage() for record in caplog.records)
-    assert [recipe.name for recipe in recipes] == ["rice", "pudding"]
+    assert [recipe.name for recipe in recipes] == ["pudding", "rice"]
 
 
 def test_pipeline_example_directory(tmp_path: Path) -> None:
@@ -51,11 +51,10 @@ def test_pipeline_example_directory(tmp_path: Path) -> None:
     (tmp_path / "rice.yaml").write_text((FIXTURES / "rice.yaml").read_text(encoding="utf-8"), encoding="utf-8")
     recipes = run(tmp_path, transform="metric")
     expected = json.loads(EXPECTED_OUTPUT.read_text(encoding="utf-8"))
-    assert [recipe.to_dict() for recipe in recipes] == expected
-    assert json.loads(recipes_to_json(recipes)) == expected
+    assert by_name([recipe.to_dict() for recipe in recipes]) == by_name(expected)
 
 
-def test_pipeline_keeps_stable_file_order(tmp_path: Path) -> None:
+def test_pipeline_orders_recipes_by_filename(tmp_path: Path) -> None:
     (tmp_path / "z.yaml").write_text("name: zucchini\ningredients:\n- item: z\n  quantity: 1\n", encoding="utf-8")
     (tmp_path / "a.yaml").write_text("name: apple\ningredients:\n- item: a\n  quantity: 1\n", encoding="utf-8")
     (tmp_path / "b.xml").write_text(
@@ -63,7 +62,7 @@ def test_pipeline_keeps_stable_file_order(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     recipes = run(tmp_path, transform="none")
-    assert [recipe.name for recipe in recipes] == ["apple", "zucchini", "beet"]
+    assert [recipe.name for recipe in recipes] == ["apple", "beet", "zucchini"]
 
 
 def test_pipeline_errors_when_no_recipes(tmp_path: Path) -> None:
@@ -74,7 +73,7 @@ def test_pipeline_errors_when_no_recipes(tmp_path: Path) -> None:
 
 def test_pipeline_loads_all_supported_fixture_formats() -> None:
     recipes = run(FIXTURES, transform="metric")
-    assert [recipe.name for recipe in recipes] == ["rice", "pudding", "broth", "toast"]
+    assert [recipe.name for recipe in recipes] == ["broth", "pudding", "rice", "toast"]
     toast = next(recipe for recipe in recipes if recipe.name == "toast")
     assert toast.ingredients[1].unit == "ml"
     assert toast.ingredients[1].quantity == 15

@@ -5,15 +5,6 @@ from pathlib import Path
 
 from recipe_normalizer.parsers import SUPPORTED_SUFFIXES
 
-# Stable scan order so CLI output does not depend on filesystem readdir.
-_SUFFIX_PRIORITY = {
-    ".yaml": 0,
-    ".yml": 0,
-    ".xml": 1,
-    ".json": 2,
-    ".toml": 3,
-}
-
 
 def discover_recipe_files(input_dir: Path, *, recursive: bool = False) -> list[Path]:
     if not input_dir.exists():
@@ -34,10 +25,5 @@ def discover_recipe_files(input_dir: Path, *, recursive: bool = False) -> list[P
         and not path.name.startswith(".")
         and path.suffix.lower() in SUPPORTED_SUFFIXES
     ]
-    return sorted(
-        files,
-        key=lambda path: (
-            _SUFFIX_PRIORITY.get(path.suffix.lower(), 99),
-            str(path).lower(),
-        ),
-    )
+    # Sorted by path so output order does not depend on filesystem readdir order.
+    return sorted(files, key=lambda path: str(path).lower())
