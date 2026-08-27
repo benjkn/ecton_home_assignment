@@ -1,0 +1,8 @@
+{
+  "name": "broth",
+  "ingredients": [
+    {"item": "water", "quantity": 1, "unit": "liter"},
+    {"item": "salt", "quantity": 1, "unit": "tsp"}
+  ],
+  "preparations": ["simmer"]
+}

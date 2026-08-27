@@ -1,0 +1,6 @@
+# Intentionally invalid YAML so the normalizer can demonstrate skip-on-error.
+name: [unterminated list
+ingredients:
+  - item: flour
+    quantity: not-a-number
+    unit: cup

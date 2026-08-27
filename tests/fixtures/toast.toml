@@ -1,0 +1,11 @@
+name = "toast"
+preparations = ["toast until golden"]
+
+[[ingredients]]
+item = "bread"
+quantity = 2
+
+[[ingredients]]
+item = "butter"
+quantity = 1
+unit = "tbsp"
