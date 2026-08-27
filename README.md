@@ -44,13 +44,16 @@ We reproduce the provided sample output (rice + pudding), skip unreadable files 
 
 ## Assumptions
 
-- **Output content matches the provided sample; array order does not.** Recipes are emitted in filename order, which is deterministic and independent of filesystem readdir order. The sample's rice-before-pudding order isn't derivable from any property of the inputs, so we didn't contort discovery to reproduce it.
-- **Ingredient fields.** `item` and `quantity` are required; `unit` and `comment` appear only when present. An empty XML `<unit></unit>` is treated as missing rather than as `""`. Whole numbers serialize as integers (`200`, not `200.0`).
-- **`preparations` is always a list of strings**, so a single XML/YAML string becomes a one-element list.
-- **Conversion factors follow the sample, not exact SI.** Gallon uses 3.78 l (not 3.78541) and a cup converts to 240 gr, both implied by the expected output. Cups therefore assume water density — 2 cups of sugar yields 480 gr here, where a density-aware answer is nearer 400 g. Ingredient-specific densities are out of scope.
-- **Bare `oz` means weight**; fluid ounces must be spelled `fl oz` / `fl. oz.`.
-- **Unrecognized units pass through unchanged** and are logged once per recipe at WARNING level.
-- **A file that fails to parse is logged and skipped.** The process exits non-zero only when no recipe could be loaded at all. Directory scanning is non-recursive unless `-r` is given, and hidden files are ignored.
+- **In-memory.** All recipes are loaded, then written as one JSON document. Peak RAM is several times the output size. Fine for a normal folder; a huge corpus could OOM.
+- **Order.** Recipes are emitted in filename order (stable). The sample lists rice before pudding; we did not special-case that.
+- **Formats.** XML, YAML, JSON, TOML, by file extension, UTF-8. Other extensions are ignored. A file may hold one recipe or a list (XML: a `<recipes>` collection).
+- **Input.** A directory, not a single file. Non-recursive unless `-r`. Hidden files (`.…`) are ignored.
+- **Schema.** `item` and `quantity` are required. `unit` and `comment` are omitted when absent. Empty `<unit></unit>` means no unit. Whole numbers serialize as integers.
+- **Preparations.** Always a list of strings. No serving-size scaling, and no unit/temperature conversion inside preparation text.
+- **Units.** US customary. Factors follow the sample, not exact SI: 1 gallon = 3.78 liter, 1 cup = 240 gr (water density, so 2 cups sugar → 480 gr). Bare `oz` is weight; fluid ounces must be `fl oz`. Unknown units pass through; one WARNING per recipe.
+- **Errors.** A bad file is logged and skipped. Exit non-zero only if nothing could be loaded. No `-o` → stdout.
+- **Rerun.** The same `-o` path is **overwritten**. A second file is not created.
+- **Duplicates.** There is **no deduplication**. Two files with the same recipe (or the same name) both appear in the output. If the output JSON is written back into the input directory, a later run will parse it as extra recipes and append them.
 
 ## Original requirements
 
