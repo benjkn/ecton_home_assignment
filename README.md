@@ -1,6 +1,7 @@
 # Recipe Normalizer
 
 CLI that reads cooking recipes from a directory (XML, YAML, JSON, TOML), converts imperial units to metric, and writes one JSON file.
+Another file format would require a new parser class and one suffix entry in `parsers/registry.py`; the CLI and pipeline stay unchanged.
 
 ## Run
 
